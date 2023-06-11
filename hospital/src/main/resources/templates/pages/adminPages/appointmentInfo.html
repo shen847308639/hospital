@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>挂号信息管理</title>
+  <!-- 引入Layui的样式文件 -->
+  <link rel="stylesheet" th:href="@{https://cdn.staticfile.org/layui/2.6.8/css/layui.css}"/>
+  <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.5.7/css/layui.min.css">
+
+</head>
+<body>
+  <div class="layui-container">
+    <h1>挂号信息管理</h1>
+
+    <!-- 查询表单 -->
+    <form id="searchForm" th:action="@{/findAppointment}">
+      <div class="layui-form-item">
+        <div class="layui-input-inline">
+          <input type="text" id="key" name="key" placeholder="搜索关键字" class="layui-input">
+        </div>
+        <button class="layui-btn layui-btn-normal" lay-submit lay-filter="search">查询</button>
+      </div>
+    </form>
+
+    <table class="layui-table">
+      <thead>
+      <tr>
+        <th style="text-align: center">序号</th>
+        <th style="text-align: center">挂号编号</th>
+        <th style="text-align: center">病人姓名</th>
+        <th style="text-align: center">医生科室</th>
+        <th style="text-align: center">挂号医生</th>
+        <th style="text-align: center">看病时间</th>
+        <th style="text-align: center">挂号时间</th>
+        <th style="text-align: center">状态</th>
+        <th style="text-align: center">操作</th>
+      </tr>
+      </thead>
+      <tbody>
+      <!-- 使用Thymeleaf循环渲染科室数据 -->
+      <tr th:each="appointment,row : ${appointments}">
+        <td style="text-align: center" th:text="${row.count}"></td>
+        <td style="text-align: center" th:text="${appointment.getAppointmentId()}"></td>
+        <td style="text-align: center" th:text="${appointment.getPatient().getPatientName()}"></td>
+        <td style="text-align: center" th:text="${appointment.getDoctor().getDepartment().getDepartmentName()}"></td>
+        <td style="text-align: center" th:text="${appointment.getDoctor().getDoctorName()}"></td>
+        <td style="text-align: center" th:text="${appointment.schedule.scheduleDate + '&nbsp;&nbsp;&nbsp;' + appointment.schedule.scheduleTime + '-' + appointment.schedule.scheduleEndTime}"></td>
+        <td style="text-align: center" th:text="${appointment.getAppointmentDateTime()}"></td>
+        <td style="text-align: center" th:text="${appointment.getAppointmentStatus()}"></td>
+        <td style="text-align: center">
+          <button class="layui-btn layui-btn-sm layui-btn-danger" th:attr="appointmentId=${appointment.getAppointmentId()}" onclick="deleteAppointment(this.getAttribute('appointmentId'))">取消挂号</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 引入Layui的JavaScript文件 -->
+  <script src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdn.staticfile.org/layui/2.5.7/layui.min.js"></script>
+  <script>
+    // 删除科室
+    function deleteAppointment(id) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://localhost:8088/deleteAppointment/"+id, false);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 204) {
+            console.log("Delete request succeeded");
+          } else {
+            console.log("Delete request failed with status: " + xhr.status);
+          }
+        }
+      };
+      xhr.send();
+      location.reload();
+    }
+
+  </script>
+</body>
+</html>

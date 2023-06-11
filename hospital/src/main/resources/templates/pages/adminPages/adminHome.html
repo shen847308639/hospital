@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>医院信息管理系统</title>
+  <link rel="stylesheet" href="https://cdn.bootcss.com/layui/2.5.6/css/layui.css">
+  <style>
+    .layui-header {
+      background-color: #393D49;
+      color: #fff;
+    }
+    .layui-side {
+      background-color: #393D49;
+      color: #fff;
+    }
+    .layui-nav-item a {
+      color: #fff !important;
+    }
+    .layui-body {
+      padding: 20px;
+    }
+    .layui-footer {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+      <div class="layui-logo">医院信息管理系统</div>
+    </div>
+    <div class="layui-side layui-bg-black">
+      <div class="layui-side-scroll">
+        <ul class="layui-nav layui-nav-tree" lay-filter="test">
+          <li class="layui-nav-item layui-nav-itemed">
+            <dl class="layui-nav-child" >
+              <dd><a th:href="@{/findDepartment?key=}">科室信息管理</a></dd>
+              <dd><a th:href="@{/findDoctor?key=}">医生信息管理</a></dd>
+              <dd><a th:href="@{/findPatient?key=}">患者信息管理</a></dd>
+              <dd><a th:href="@{/findSchedule?key=}">医生排班信息管理</a></dd>
+              <dd><a th:href="@{/findAppointment?key=}">挂号信息管理</a></dd>
+              <dd><a th:href="@{/findUser?key=}">用户信息管理</a></dd>
+              <dd><a onclick="loginout()">退出登录</a></dd>
+            </dl>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="layui-body">
+      <!-- 内容区域 -->
+      <iframe id="iframe" th:src="@{/findDepartment?key=}" frameborder="0" scrolling="auto" style="width: 100%; height: 100%;"></iframe>
+    </div>
+    <div class="layui-footer">
+      © 2023 医院信息管理系统
+    </div>
+  </div>
+  <script src="https://cdn.bootcss.com/layui/2.5.6/layui.js"></script>
+  <script>
+    layui.use(['element', 'jquery'], function(){
+      var element = layui.element;
+      var $ = layui.jquery;
+      //监听导航点击事件
+      $('.layui-nav-item a').click(function(){
+        //获取跳转的url
+        var url = $(this).attr('href');
+        //设置iframe的src属性
+        $('#iframe').attr('src', url);
+        //取消默认跳转事件
+        return false;
+      });
+    });
+    function loginout(){
+      window.location.href = "/toAdminLogin";
+    }
+  </script>
+</body>
+</html>

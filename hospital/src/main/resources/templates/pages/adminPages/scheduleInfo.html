@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>医生排班信息管理</title>
+  <!-- 引入Layui的样式文件 -->
+  <link rel="stylesheet" th:href="@{https://cdn.staticfile.org/layui/2.6.8/css/layui.css}"/>
+  <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.5.7/css/layui.min.css">
+
+</head>
+<body>
+  <div class="layui-container">
+    <h1>医生排班信息管理</h1>
+
+    <!-- 查询表单 -->
+    <form id="searchForm" th:action="@{/findSchedule}">
+      <div class="layui-form-item">
+        <div class="layui-input-inline">
+          <input type="text" id="key" name="key" placeholder="搜索关键字" class="layui-input">
+        </div>
+        <button class="layui-btn layui-btn-normal" lay-submit lay-filter="search">查询</button>
+      </div>
+    </form>
+
+    <table class="layui-table">
+      <thead>
+      <tr>
+        <th style="text-align: center">序号</th>
+        <th style="text-align: center">排班编号</th>
+        <th style="text-align: center">医生名称</th>
+        <th style="text-align: center">所属科室</th>
+        <th style="text-align: center">排班日期</th>
+        <th style="text-align: center">上班时间</th>
+        <th style="text-align: center">下班时间</th>
+        <th style="text-align: center">操作</th>
+      </tr>
+      </thead>
+      <tbody>
+      <!-- 使用Thymeleaf循环渲染科室数据 -->
+      <tr th:each="schedule,row : ${schedules}">
+        <td style="text-align: center" th:text="${row.count}"></td>
+        <td style="text-align: center" th:text="${schedule.getScheduleId()}"></td>
+        <td style="text-align: center" th:text="${schedule.getDoctor().getDoctorName()}"></td>
+        <td style="text-align: center" th:text="${schedule.getDoctor().getDepartment().getDepartmentName()}"></td>
+        <td style="text-align: center" th:text="${schedule.getScheduleDate()}"></td>
+        <td style="text-align: center" th:text="${schedule.getScheduleTime()}"></td>
+        <td style="text-align: center" th:text="${schedule.getScheduleEndTime()}"></td>
+        <td style="text-align: center">
+          <button class="layui-btn layui-btn-sm layui-btn-normal" th:attr="schedule=${schedule}" onclick="editSchedule(this.getAttribute('schedule'))">编辑</button>
+          <button class="layui-btn layui-btn-sm layui-btn-danger" th:attr="scheduleId=${schedule.getScheduleId()}" onclick="deleteSchedule(this.getAttribute('scheduleId'))">删除</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+    <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="addSchedulePage()">新增排班</button>
+  </div>
+
+  <!-- 引入Layui的JavaScript文件 -->
+  <script src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdn.staticfile.org/layui/2.5.7/layui.min.js"></script>
+  <script>
+    // 添加科室页面
+    var scheduleId = "";
+    var doctorId = "";
+    var departmentId = "";
+    var scheduleDate = "";
+    var scheduleTime = "";
+    var scheduleEndTime = "";
+
+    var doctor = `[[${doctor}]]`;
+    var json = doctor.replace(/&quot;/g,'"');
+    doctor = JSON.parse(json);
+    var option = '<select id="doctorSelect" lay-verify="required" lay-filter="doctorSelect"><option value="">请选择医生</option>';
+    for (var i = 0; i < doctor.length; i++) {
+      option += '<option value="' + doctor[i].doctorId + '">' + doctor[i].doctorName + "</option>"
+    }
+    option += '</select>';
+
+
+    function addSchedulePage() {
+      layui.use(['layer', 'form'], function() {
+        var layer = layui.layer;
+        var form = layui.form;
+
+        var html = `
+                      <div class="layui-form">
+
+                          <div class="layui-form-item">
+                            <label class="layui-form-label">所属科室</label>
+                              <div class="layui-input-block">
+                                  ${option}
+                              </div>
+                          </div>
+                          <div class="layui-form-item">
+                              <label class="layui-form-label">排班日期</label>
+                              <div class="layui-input-block">
+                                    <input type="text" placeholder="请选择日期" class="layui-input" id="date">
+                              </div>
+                          </div>
+                           <div class="layui-form-item">
+                            <label class="layui-form-label">上班时间</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="date" id="time" placeholder="请选择时间" autocomplete="off" class="layui-input">
+                            </div>
+                          </div>
+                          <div class="layui-form-item">
+                              <label class="layui-form-label">下班时间</label>
+                              <div class="layui-input-block">
+                                  <input type="text" name="date" id="endTime" placeholder="请选择时间" autocomplete="off" class="layui-input">
+                              </div>
+                          </div>
+                      </div>
+
+
+                  `;
+        // 初始化 LayUI
+        layui.use(['laydate'], function() {
+          var laydate = layui.laydate;
+
+          // 创建日期选择框
+          laydate.render({
+            elem: '#date', // 绑定的元素 ID
+            type: 'date',
+            format: 'yyyy-MM-dd', // 日期格式
+            // 更多可选配置...
+          });
+        });
+        layui.use(['laydate'], function() {
+          var laydate = layui.laydate;
+
+          // 渲染时间选择框
+          laydate.render({
+            elem: '#time', // 绑定的元素ID
+            type: 'time', // 设置选择的时间类型，这里使用日期和时间
+            format: 'HH:mm:ss', // 设置时间的显示格式
+            // 更多配置项可以根据需要进行添加
+          });
+        });
+        layui.use(['laydate'], function() {
+          var laydate = layui.laydate;
+
+          // 渲染时间选择框
+          laydate.render({
+            elem: '#endTime', // 绑定的元素ID
+            type: 'time', // 设置选择的时间类型，这里使用日期和时间
+            format: 'HH:mm:ss', // 设置时间的显示格式
+            // 更多配置项可以根据需要进行添加
+          });
+        });
+        layer.open({
+          title: '新增排班',
+          area: ['500px', '480px'],
+          content: html,
+          btn: ['保存', '取消'],
+          yes: function(index, layero) {
+            // 点击保存按钮的回调函数
+            doctorId = document.getElementById('doctorSelect').options[doctorSelect.selectedIndex].value;
+            scheduleDate = document.getElementById('date').value;
+            scheduleTime = document.getElementById('time').value;
+            scheduleEndTime = document.getElementById('endTime').value;
+
+            // 发送保存科室的请求
+            addSchedule();
+
+            layer.close(index); // 关闭弹窗
+          },
+          btn2: function(index, layero) {
+            // 点击取消按钮的回调函数
+            layer.close(index); // 关闭弹窗
+          }
+        });
+
+        form.render(); // 渲染表单元素
+      });
+    }
+
+    // 添加科室
+    function addSchedule() {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/addSchedule', false);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            // 请求成功的处理逻辑
+            console.log('保存科室成功');
+            // 刷新页面或者执行其他操作
+          } else {
+            // 请求失败的处理逻辑
+            console.log('保存科室失败');
+            // 处理错误情况
+          }
+        }
+      };
+
+      var requestData = {
+        doctorId : doctorId,
+        scheduleDate : scheduleDate,
+        scheduleTime : scheduleTime,
+        scheduleEndTime : scheduleEndTime
+      };
+      var jsonData = JSON.stringify(requestData);
+
+      xhr.send(jsonData);
+      location.reload();
+    }
+
+    // 编辑科室
+    function editSchedule(schedule) {
+      var matches = schedule.match(/\((.*?)\)/);
+      if (matches && matches.length > 1) {
+        var propertiesString = matches[1];
+
+        // 将属性字符串拆分为键值对
+        var propertiesArray = propertiesString.split(', ');
+
+        // 创建空对象
+        schedule = {};
+
+        // 遍历属性数组，将键值对分别添加到对象中
+        for (var i = 0; i < propertiesArray.length; i++) {
+          var property = propertiesArray[i];
+          var keyValue = property.split('=');
+
+          // 将键值对添加到对象
+          schedule[keyValue[0].trim()] = keyValue[1].trim();
+        }
+
+        console.log(schedule);
+      } else {
+        console.log("Invalid schedule string");
+      }
+
+      layui.use(['layer', 'form'], function() {
+        var layer = layui.layer;
+        var form = layui.form;
+
+        var html = `
+                      <div class="layui-form">
+                          <div class="layui-form-item">
+                            <label class="layui-form-label">所属科室</label>
+                              <div class="layui-input-block">
+                                  ${option}
+                              </div>
+                          </div>
+                          <div class="layui-form-item">
+                              <label class="layui-form-label">排班日期</label>
+                              <div class="layui-input-block">
+                                    <input type="text" placeholder="请选择日期" name="schduleDate" value="${schedule.scheduleDate}" class="layui-input" id="date">
+                              </div>
+                          </div>
+                           <div class="layui-form-item">
+                            <label class="layui-form-label">上班时间</label>
+                            <div class="layui-input-block">
+                                <input type="text" id="time" placeholder="请选择时间" name="scheduleTime" value="${schedule.scheduleTime}" autocomplete="off" class="layui-input">
+                            </div>
+                          </div>
+                          <div class="layui-form-item">
+                              <label class="layui-form-label">下班时间</label>
+                              <div class="layui-input-block">
+                                  <input type="text" id="endTime" placeholder="请选择时间" name="scheduleEndTime" value="${schedule.scheduleEndTime}" autocomplete="off" class="layui-input">
+                              </div>
+                          </div>
+                      </div>
+                  `;
+
+        layui.use(['laydate'], function() {
+          var laydate = layui.laydate;
+
+          // 创建日期选择框
+          laydate.render({
+            elem: '#date', // 绑定的元素 ID
+            type: 'date',
+            format: 'yyyy-MM-dd', // 日期格式
+            // 更多可选配置...
+          });
+        });
+        layui.use(['laydate'], function() {
+          var laydate = layui.laydate;
+
+          // 渲染时间选择框
+          laydate.render({
+            elem: '#time', // 绑定的元素ID
+            type: 'time', // 设置选择的时间类型，这里使用日期和时间
+            format: 'HH:mm:ss', // 设置时间的显示格式
+            // 更多配置项可以根据需要进行添加
+          });
+        });
+        layui.use(['laydate'], function() {
+          var laydate = layui.laydate;
+
+          // 渲染时间选择框
+          laydate.render({
+            elem: '#endTime', // 绑定的元素ID
+            type: 'time', // 设置选择的时间类型，这里使用日期和时间
+            format: 'HH:mm:ss', // 设置时间的显示格式
+            // 更多配置项可以根据需要进行添加
+          });
+        });
+
+        layer.open({
+          title: '编辑排班表',
+          area: ['500px', '480px'],
+          content: html,
+          btn: ['保存', '取消'],
+          yes: function(index, layero) {
+            // 点击编辑按钮的回调函数
+
+            doctorId = document.getElementById('doctorSelect').options[doctorSelect.selectedIndex].value;
+            scheduleDate = layero.find('input[name="schduleDate"]').val();
+            scheduleTime = layero.find('input[name="scheduleTime"]').val();
+            scheduleEndTime = layero.find('input[name="scheduleEndTime"]').val();
+
+            // 发送编辑科室的请求
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/editSchedule', false);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                  // 请求成功的处理逻辑
+                  console.log('保存科室成功');
+                  // 刷新页面或者执行其他操作
+                } else {
+                  // 请求失败的处理逻辑
+                  console.log('保存科室失败');
+                  // 处理错误情况
+                }
+              }
+            };
+
+            var requestData = {
+              scheduleId: schedule.scheduleId,
+              doctorId: doctorId,
+              scheduleDate: scheduleDate,
+              scheduleTime: scheduleTime,
+              scheduleEndTime: scheduleEndTime
+            };
+            var jsonData = JSON.stringify(requestData);
+
+            xhr.send(jsonData);
+            location.reload();
+
+            layer.close(index); // 关闭弹窗
+          },
+          btn2: function(index, layero) {
+            // 点击取消按钮的回调函数
+            layer.close(index); // 关闭弹窗
+          }
+        });
+
+        form.render(); // 渲染表单元素
+      });
+    }
+
+    // 删除科室
+    function deleteSchedule(id) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://localhost:8088/deleteSchedule/"+id, false);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 204) {
+            console.log("Delete request succeeded");
+          } else {
+            console.log("Delete request failed with status: " + xhr.status);
+          }
+        }
+      };
+      xhr.send();
+      location.reload();
+    }
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>科室信息管理</title>
+  <!-- 引入Layui的样式文件 -->
+  <link rel="stylesheet" th:href="@{https://cdn.staticfile.org/layui/2.6.8/css/layui.css}"/>
+  <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.5.7/css/layui.min.css">
+
+</head>
+<body>
+  <div class="layui-container">
+    <h1>科室信息管理</h1>
+
+    <!-- 查询表单 -->
+    <form id="searchForm" th:action="@{/findDepartment}">
+      <div class="layui-form-item">
+        <div class="layui-input-inline">
+          <input type="text" id="key" name="key" placeholder="搜索关键字" class="layui-input">
+        </div>
+        <button class="layui-btn layui-btn-normal" lay-submit lay-filter="search">查询</button>
+      </div>
+    </form>
+
+    <table class="layui-table">
+      <thead>
+      <tr>
+        <th style="text-align: center">序号</th>
+        <th style="text-align: center">科室编号</th>
+        <th style="text-align: center">科室名称</th>
+        <th style="text-align: center">科室用途</th>
+        <th style="text-align: center">操作</th>
+      </tr>
+      </thead>
+      <tbody>
+      <!-- 使用Thymeleaf循环渲染科室数据 -->
+      <tr th:each="department,row : ${departments}">
+        <td style="text-align: center" th:text="${row.count}"></td>
+        <td style="text-align: center" th:text="${department.getDepartmentId()}"></td>
+        <td style="text-align: center" th:text="${department.getDepartmentName()}"></td>
+        <td style="text-align: center" th:text="${department.getDepartmentDescription()}"></td>
+        <td style="text-align: center">
+          <button class="layui-btn layui-btn-sm layui-btn-normal" th:attr="department=${department}" onclick="editDepartment(this.getAttribute('department'))">编辑</button>
+          <button class="layui-btn layui-btn-sm layui-btn-danger" th:attr="departmentId=${department.getDepartmentId()}" onclick="deleteDepartment(this.getAttribute('departmentId'))">删除</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+    <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="addDepartmentPage()">新增科室</button>
+  </div>
+
+  <!-- 引入Layui的JavaScript文件 -->
+  <script src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdn.staticfile.org/layui/2.5.7/layui.min.js"></script>
+  <script>
+    // 添加科室页面
+
+
+    // 编辑科室
+    function editDepartment(department) {
+      var matches = department.match(/\((.*?)\)/);
+      if (matches && matches.length > 1) {
+        var propertiesString = matches[1];
+
+        // 将属性字符串拆分为键值对
+        var propertiesArray = propertiesString.split(', ');
+
+        // 创建空对象
+        department = {};
+
+        // 遍历属性数组，将键值对分别添加到对象中
+        for (var i = 0; i < propertiesArray.length; i++) {
+          var property = propertiesArray[i];
+          var keyValue = property.split('=');
+
+          // 将键值对添加到对象
+          department[keyValue[0].trim()] = keyValue[1].trim();
+        }
+
+        console.log(department);
+      } else {
+        console.log("Invalid department string");
+      }
+      var html = `<div class="layui-form-item">
+                          <label class="layui-form-label">患者名称</label>
+                          <div class="layui-input-block">
+                              <input type="text" name="departmentName" lay-verify="required" value="${department.departmentName}" placeholder="请输入患者名称" autocomplete="off" class="layui-input">
+                          </div>
+                      </div>
+                      <div class="layui-form-item">
+                          <label class="layui-form-label">患者电话</label>
+                          <div class="layui-input-block">
+                              <input type="text" name="departmentDescription" lay-verify="required" value="${department.departmentDescription}" placeholder="请输入患者电话" autocomplete="off" class="layui-input">
+                          </div>
+                      </div>`;
+      layui.use(['layer', 'form'], function() {
+        var layer = layui.layer;
+        var form = layui.form;
+
+        layer.open({
+          title: '编辑科室',
+          area: ['500px', '300px'],
+          content: html,
+          btn: ['保存', '取消'],
+          yes: function(index, layero) {
+            // 点击编辑按钮的回调函数
+
+            departmentName = layero.find('input[name="departmentName"]').val();
+            departmentDescription = layero.find('input[name="departmentDescription"]').val();
+
+            // 发送编辑科室的请求
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/editDepartment', false);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                  // 请求成功的处理逻辑
+                  console.log('保存科室成功');
+                  // 刷新页面或者执行其他操作
+                } else {
+                  // 请求失败的处理逻辑
+                  console.log('保存科室失败');
+                  // 处理错误情况
+                }
+              }
+            };
+
+            var requestData = {
+              departmentId: department.departmentId,
+              departmentName: departmentName,
+              departmentDescription: departmentDescription
+            };
+            var jsonData = JSON.stringify(requestData);
+
+            xhr.send(jsonData);
+            location.reload();
+
+            layer.close(index); // 关闭弹窗
+          },
+          btn2: function(index, layero) {
+            // 点击取消按钮的回调函数
+            layer.close(index); // 关闭弹窗
+          }
+        });
+
+        form.render(); // 渲染表单元素
+      });
+    }
+
+    // 编辑科室
+    function addDepartmentPage() {
+      layui.use(['layer', 'form'], function() {
+        var layer = layui.layer;
+        var form = layui.form;
+        var html = `<div class="layui-form-item">
+                          <label class="layui-form-label">患者名称</label>
+                          <div class="layui-input-block">
+                              <input type="text" name="departmentName" lay-verify="required" value="" placeholder="请输入患者名称" autocomplete="off" class="layui-input">
+                          </div>
+                      </div>
+                      <div class="layui-form-item">
+                          <label class="layui-form-label">患者电话</label>
+                          <div class="layui-input-block">
+                              <input type="text" name="departmentDescription" lay-verify="required" value="" placeholder="请输入患者电话" autocomplete="off" class="layui-input">
+                          </div>
+                      </div>`;
+        layer.open({
+          title: '编辑科室',
+          area: ['500px', '300px'],
+          content: html,
+          btn: ['保存', '取消'],
+          yes: function(index, layero) {
+            // 点击编辑按钮的回调函数
+
+            departmentName = layero.find('input[name="departmentName"]').val();
+            departmentDescription = layero.find('input[name="departmentDescription"]').val();
+
+            // 发送编辑科室的请求
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/addDepartment', false);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                  // 请求成功的处理逻辑
+                  console.log('保存科室成功');
+                  // 刷新页面或者执行其他操作
+                } else {
+                  // 请求失败的处理逻辑
+                  console.log('保存科室失败');
+                  // 处理错误情况
+                }
+              }
+            };
+
+            var requestData = {
+              departmentName: departmentName,
+              departmentDescription: departmentDescription
+            };
+            var jsonData = JSON.stringify(requestData);
+
+            xhr.send(jsonData);
+            location.reload();
+
+            layer.close(index); // 关闭弹窗
+          },
+          btn2: function(index, layero) {
+            // 点击取消按钮的回调函数
+            layer.close(index); // 关闭弹窗
+          }
+        });
+
+        form.render(); // 渲染表单元素
+      });
+    }
+
+    // 删除科室
+    function deleteDepartment(id) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://localhost:8088/deleteDepartment/"+id, false);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 204) {
+            console.log("Delete request succeeded");
+          } else {
+            console.log("Delete request failed with status: " + xhr.status);
+          }
+        }
+      };
+      xhr.send();
+      location.reload();
+    }
+
+  </script>
+</body>
+</html>

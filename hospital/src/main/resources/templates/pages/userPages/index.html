@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <title>在线挂号预约系统</title>
+  <link rel="stylesheet" href="https://cdn.bootcss.com/layui/2.5.6/css/layui.css">
+</head>
+<body>
+  <div class="layui-container">
+    <div class="layui-row layui-container">
+      <div class="layui-col-md6">
+        <form class="layui-form" action="">
+          <div class="layui-form-item">
+            <div class="layui-input-inline">
+              <input type="text" placeholder="请选择关键词" name="key" autocomplete="off" class="layui-input">
+            </div>
+            <button class="layui-btn" lay-submit lay-filter="search">查询</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="layui-row">
+      <div class="layui-col-md6 layui-container">
+        <table class="layui-table" >
+          <thead>
+            <tr>
+              <th style="text-align: center">序号</th>
+              <th style="text-align: center">医生姓名</th>
+              <th style="text-align: center">所属科室</th>
+              <th style="text-align: center">排班时间(就诊时间)</th>
+              <th style="text-align: center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="doctorTable">
+            <tr th:each="schedule,row : ${schedules}">
+              <td style="text-align: center" th:text="${row.count}"></td>
+              <td style="text-align: center" th:text="${schedule.getDoctor().getDoctorName()}"></td>
+              <td style="text-align: center" th:text="${schedule.getDoctor().getDepartment().getDepartmentName()}"></td>
+              <td style="text-align: center" th:text="${schedule.getScheduleDate() + schedule.getScheduleTime() + schedule.getScheduleEndTime()}"></td>
+              <td style="text-align: center">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" th:attr="schedule=${schedule}" onclick="appointment(this.getAttribute('schedule'))">挂号</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="layui-footer">
+      <ul class="layui-nav layui-layout-right">
+        <li class="layui-nav-item"><a th:href="@{/logout}">退出登录</a></li>
+        <li class="layui-nav-item"><a th:href="@{/findAppointmentById}">我的预约</a></li>
+        <li class="layui-nav-item"><a th:href="@{/toAdminLogin}">后台管理</a></li>
+      </ul>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdn.staticfile.org/layui/2.5.7/layui.min.js"></script>
+  <script>
+    layui.use(['form', 'laydate'], function(){
+      var form = layui.form;
+      var laydate = layui.laydate;
+      // 监听查询按钮
+      form.on('submit(search)', function(){
+        // 发送ajax请求，获取医生信息
+        $.ajax({
+          url: '/findSchedule?key=',
+          type: 'GET',
+        });
+        location.reload();
+      });
+    });
+    // 预约医生
+    function appointment(schedule){
+      var matches = schedule.match(/\((.*?)\)/);
+      if (matches && matches.length > 1) {
+        var propertiesString = matches[1];
+
+        // 将属性字符串拆分为键值对
+        var propertiesArray = propertiesString.split(', ');
+
+        // 创建空对象
+        schedule = {};
+
+        // 遍历属性数组，将键值对分别添加到对象中
+        for (var i = 0; i < propertiesArray.length; i++) {
+          var property = propertiesArray[i];
+          var keyValue = property.split('=');
+
+          // 将键值对添加到对象
+          schedule[keyValue[0].trim()] = keyValue[1].trim();
+        };
+      }
+
+      // 发送ajax请求，预约医生
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', 'http://localhost:8088/addAppointment', false);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      var requestData = {
+        scheduleId: schedule.scheduleId,
+        doctorId: schedule.doctorId,
+        scheduleDate: schedule.scheduleDate,
+        scheduleTime: schedule.scheduleTime,
+        scheduleEndTime: schedule.scheduleEndTime
+      };
+
+      xhr.send(JSON.stringify(requestData));
+
+
+    }
+  </script>
+</body>
+</html>
